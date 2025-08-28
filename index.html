@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>烦恼全吴，元气满满</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            touch-action: manipulation;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #000000, #0a0a2a, #000000);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff;
+            opacity: 0;
+            transition: opacity 2s;
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            margin: 0 auto;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        .btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+            transition: transform 0.2s;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="container">
+        <h1 id="text">元气满满，烦恼全吴</h1>
+        <button class="btn" id="triggerBtn">点得多 烦恼少</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const textElement = document.getElementById('text');
+            const triggerBtn = document.getElementById('triggerBtn');
+            
+            // 设置canvas尺寸为窗口大小
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            
+            // 星星数组
+            const stars = [];
+            // 流星数组
+            let meteors = [];
+            // 烟花数组
+            let fireworks = [];
+            
+            // 创建星星
+            function createStars() {
+                for (let i = 0; i < 200; i++) {
+                    stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: Math.random() * 2 + 0.5,
+                        speed: Math.random() * 0.5,
+                        opacity: Math.random()
+                    });
+                }
+            }
+            
+            // 绘制星星
+            function drawStars() {
+                stars.forEach(star => {
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                    ctx.fill();
+                    
+                    // 星星闪烁效果
+                    star.opacity += star.speed * 0.01;
+                    if (star.opacity > 1 || star.opacity < 0.3) {
+                        star.speed = -star.speed;
+                    }
+                });
+            }
+            
+            // 创建流星
+            function createMeteor() {
+                meteors.push({
+                    x: Math.random() * canvas.width,
+                    y: 0,
+                    length: Math.random() * 50 + 50,
+                    speed: Math.random() * 10 + 5,
+                    angle: Math.PI / 4,
+                    hue: Math.random() * 360
+                });
+            }
+            
+            // 绘制流星
+            function drawMeteors() {
+                meteors.forEach((meteor, index) => {
+                    ctx.save();
+                    ctx.translate(meteor.x, meteor.y);
+                    ctx.rotate(meteor.angle);
+                    
+                    // 创建流星渐变
+                    const gradient = ctx.createLinearGradient(0, 0, meteor.length, 0);
+                    gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+                    gradient.addColorStop(0.3, `hsla(${meteor.hue}, 100%, 50%, 0.8)`);
+                    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, meteor.length, 2);
+                    
+                    // 流星拖尾效果
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = 'white';
+                    ctx.fill();
+                    
+                    ctx.restore();
+                    
+                    // 更新流星位置
+                    meteor.x += meteor.speed * Math.cos(meteor.angle);
+                    meteor.y += meteor.speed * Math.sin(meteor.angle);
+                    
+                    // 移除超出画布的流星
+                    if (meteor.x > canvas.width || meteor.y > canvas.height) {
+                        meteors.splice(index, 1);
+                    }
+                });
+            }
+            
+            // 创建烟花
+            function createFirework(x, y) {
+                const hue = Math.random() * 360;
+                const particles = [];
+                const count = 150;
+                
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 5 + 1;
+                    particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        hue: hue,
+                        brightness: Math.random() * 50 + 50,
+                        size: Math.random() * 2 + 1,
+                        alpha: 1,
+                        decay: Math.random() * 0.01 + 0.005
+                    });
+                }
+                
+                fireworks.push(particles);
+            }
+            
+            // 绘制烟花
+            function drawFireworks() {
+                fireworks.forEach((particles, index) => {
+                    let allDead = true;
+                    
+                    for (let i = 0; i < particles.length; i++) {
+                        const p = particles[i];
+                        
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `hsla(${p.hue}, 100%, ${p.brightness}%, ${p.alpha})`;
+                        ctx.fill();
+                        
+                        // 更新粒子位置和透明度
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.alpha -= p.decay;
+                        
+                        // 添加重力效果
+                        p.vy += 0.05;
+                        
+                        if (p.alpha > 0) {
+                            allDead = false;
+                        }
+                    }
+                    
+                    // 移除消失的烟花
+                    if (allDead) {
+                        fireworks.splice(index, 1);
+                        
+                        // 当烟花消失时显示文字
+                        if (fireworks.length === 0) {
+                            textElement.style.opacity = 1;
+                        }
+                    }
+                });
+            }
+            
+            // 动画循环
+            function animate() {
+                // 清除画布
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                drawStars();
+                drawMeteors();
+                drawFireworks();
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // 初始化
+            function init() {
+                createStars();
+                animate();
+                
+                // 每2秒创建一个流星
+                setInterval(createMeteor, 2000);
+                
+                // 初始创建几个流星
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(createMeteor, i * 500);
+                }
+            }
+            
+            // 触发效果
+            function triggerEffects() {
+                // 隐藏文字
+                textElement.style.opacity = 0;
+                
+                // 创建多个烟花
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        createFirework(
+                            Math.random() * canvas.width * 0.6 + canvas.width * 0.2,
+                            Math.random() * canvas.height * 0.6 + canvas.height * 0.2
+                        );
+                    }, i * 300);
+                }
+                
+                // 创建多个流星
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(createMeteor, i * 200);
+                }
+            }
+            
+            // 添加事件监听器
+            canvas.addEventListener('click', triggerEffects);
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                triggerEffects();
+            });
+            
+            triggerBtn.addEventListener('click', triggerEffects);
+            
+            // 初始化
+            init();
+        });
+    </script>
+</body>
+</html>
